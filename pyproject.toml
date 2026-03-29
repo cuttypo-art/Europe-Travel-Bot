@@ -9,6 +9,9 @@ dependencies = [
     "langchain>=1.2.13",
     "langchain-core>=1.2.23",
     "langchain-openai>=1.1.12",
+    "langchain-opentutorial>=0.0.9",
+    "langchain-teddynote>=0.5.4",
     "nbconvert>=7.17.0",
+    "openai>=2.30.0",
     "python-dotenv>=1.2.2",
 ]
