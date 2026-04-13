@@ -1,6 +1,12 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 
+// Fix OpenAI API key if it has a leading 'y' prefix (common input artifact)
+const rawKey = process.env.OPENAI_API_KEY ?? "";
+if (rawKey.startsWith("y") && rawKey.slice(1).startsWith("sk-")) {
+  process.env.OPENAI_API_KEY = rawKey.slice(1);
+}
+
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {

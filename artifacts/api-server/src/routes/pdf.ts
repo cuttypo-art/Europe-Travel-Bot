@@ -1,15 +1,18 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
-import { createRequire } from "module";
 import OpenAI from "openai";
-
-const require = createRequire(import.meta.url);
-const pdfParse = require("pdf-parse") as (buffer: Buffer) => Promise<{ text: string; numpages: number }>;
+// pdf-parse v1 exports a CJS function; use globalThis.require which is set by the esbuild banner
+const pdfParse: (buffer: Buffer) => Promise<{ text: string; numpages: number }> =
+  (globalThis as any).require("pdf-parse");
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI(): OpenAI {
+  let key = process.env.OPENAI_API_KEY ?? "";
+  if (key.startsWith("y") && key.slice(1).startsWith("sk-")) key = key.slice(1);
+  return new OpenAI({ apiKey: key });
+}
 
 interface Chunk {
   text: string;
@@ -52,7 +55,7 @@ function splitIntoChunks(text: string, chunkSize = 800, overlap = 100): string[]
 }
 
 async function getEmbedding(text: string): Promise<number[]> {
-  const res = await openai.embeddings.create({
+  const res = await getOpenAI().embeddings.create({
     model: "text-embedding-3-small",
     input: text.slice(0, 8000),
   });
@@ -78,13 +81,19 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
       return;
     }
 
+    // Fix filename encoding (multer may receive Latin-1 encoded UTF-8 bytes)
+    const rawName = req.file.originalname;
+    const filename = (() => {
+      try { return Buffer.from(rawName, "latin1").toString("utf8"); } catch { return rawName; }
+    })();
+
     const rawChunks = splitIntoChunks(text);
     const chunks: Chunk[] = [];
 
     const batchSize = 20;
     for (let i = 0; i < rawChunks.length; i += batchSize) {
       const batch = rawChunks.slice(i, i + batchSize);
-      const embRes = await openai.embeddings.create({
+      const embRes = await getOpenAI().embeddings.create({
         model: "text-embedding-3-small",
         input: batch.map(c => c.slice(0, 8000)),
       });
@@ -93,11 +102,11 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
       }
     }
 
-    vectorStore = { filename: req.file.originalname, chunks };
+    vectorStore = { filename, chunks };
 
     res.json({
       success: true,
-      filename: req.file.originalname,
+      filename,
       chunkCount: chunks.length,
       message: `PDF indexed successfully with ${chunks.length} chunks`,
     });
@@ -146,7 +155,7 @@ ${context}`,
       { role: "user", content: question },
     ];
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages,
       temperature: 0.1,
