@@ -166,7 +166,7 @@ async function tavilySearch(query: string): Promise<WebResult[]> {
 
 // ── 구글맵 관련 질문 감지 ────────────────────────────────────────────────────
 function isGoogleMapQuestion(q: string): boolean {
-  return /구글\s*맵|구글\s*지도|google\s*map|길찾기|내비|나침반|스트리트뷰|위성\s*지도|장소\s*검색|즐겨찾기\s*저장|오프라인\s*지도/i.test(q);
+  return /구글\s*맵|구글\s*지도|google\s*map|길찾기|내비|나침반|스트리트뷰|위성\s*지도|장소\s*검색|즐겨찾기\s*저장|오프라인\s*지도|라이브\s*뷰|live\s*view|위치\s*공유|리뷰|평점|후기/i.test(q);
 }
 
 // ── 구글맵 슬라이드 이미지 URL 반환 ─────────────────────────────────────────
