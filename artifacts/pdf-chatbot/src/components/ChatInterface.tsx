@@ -239,11 +239,11 @@ function WelcomeScreen({ onSuggest }: { hasPdf: boolean; onSuggest: (q: string) 
         href={BOOK_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="block mb-5 group"
+        className="inline-block mb-5 group mx-auto"
         title="교보문고에서 책 보기"
       >
         <BookCoverFrame />
-        <p className="text-sm text-blue-500 mt-2.5 font-semibold group-hover:underline">
+        <p className="text-xs text-blue-500 mt-2 font-medium group-hover:underline text-center">
           📖 교보문고에서 바로보기
         </p>
       </a>
