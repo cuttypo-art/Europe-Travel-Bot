@@ -4,6 +4,33 @@ import { Send, User, Bot, Loader2, Globe, BookOpen, ExternalLink } from "lucide-
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
+const URL_REGEX = /https?:\/\/[^\s,)"\u200B\u3001\u3002\uff01\uff0c\uff0e\u0022\u0027]+/g;
+
+function renderTextWithLinks(text: string) {
+  const parts = text.split(URL_REGEX);
+  const urls = text.match(URL_REGEX) ?? [];
+  return parts.reduce<React.ReactNode[]>((acc, part, i) => {
+    acc.push(<span key={`t${i}`}>{part}</span>);
+    if (urls[i]) {
+      const href = urls[i].replace(/[.,;:!?)]+$/, "");
+      let label = href.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+      acc.push(
+        <a
+          key={`u${i}`}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-0.5 text-blue-600 underline underline-offset-2 hover:text-blue-800 transition-colors break-all"
+        >
+          {label}
+          <ExternalLink className="h-3 w-3 shrink-0 inline" />
+        </a>
+      );
+    }
+    return acc;
+  }, []);
+}
+
 type WebResult = { title: string; url: string; content: string };
 type ChatMessage = {
   role: "user" | "assistant";
@@ -220,7 +247,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
                 }
           }
         >
-          {msg.content}
+          {isUser ? msg.content : renderTextWithLinks(msg.content)}
         </div>
 
         {!isUser && (

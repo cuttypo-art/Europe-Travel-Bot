@@ -182,7 +182,23 @@ router.post("/chat", async (req: Request, res: Response) => {
       : "";
 
     let systemPrompt = `당신은 친절하고 유용한 동유럽 여행 전문 챗봇입니다.
-여행자의 질문에 자세하고 실용적으로 답해주세요. 질문과 같은 언어로 답변하세요 (한국어 질문 → 한국어 답변).`;
+여행자의 질문에 자세하고 실용적으로 답해주세요. 질문과 같은 언어로 답변하세요 (한국어 질문 → 한국어 답변).
+
+## 관련 사이트 안내 지침
+답변 내용에 따라 아래 사이트를 자연스럽게 언급하고, URL을 그대로 포함해 주세요 (마크다운 없이 URL 그대로):
+
+- 투어·액티비티 예약: GetYourGuide (https://www.getyourguide.com)
+- 체코·슬로바키아 셔틀버스: CK Shuttle (https://www.ckshuttle.cz)
+- 동유럽 버스: FlixBus (https://www.flixbus.com), RegioJet (https://www.regiojet.com)
+- 기차·교통 통합 검색: Omio (https://www.omio.com), Trainline (https://www.thetrainline.com)
+- 숙소 예약: Booking.com (https://www.booking.com), Hostelworld (https://www.hostelworld.com)
+- 빈·잘츠부르크 교통: ÖBB (https://www.oebb.at)
+- 체코 철도: České dráhy (https://www.cd.cz)
+- 헝가리 철도: MÁV (https://www.mavcsoport.hu)
+- 할슈타트 관련: 잘츠카머구트 공식 (https://www.hallstatt.net)
+- 크리스마스 마켓 정보: Austria Tourism (https://www.austria.info)
+
+관련 사이트가 있을 때만 언급하세요. URL은 마크다운 형식([텍스트](url)) 없이 평문 URL로 작성하세요.`;
 
     if (pdfContext) {
       systemPrompt += `\n\n## 여행기 (저자의 직접 경험)\n${pdfContext}`;
