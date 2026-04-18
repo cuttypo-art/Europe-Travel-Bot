@@ -12,19 +12,15 @@ export default function Home() {
   return (
     <div
       className="min-h-[100dvh] text-foreground flex flex-col font-sans"
-      style={{
-        background: "linear-gradient(135deg, #e8f4fd 0%, #fef9f0 50%, #f0f4ff 100%)",
-      }}
+      style={{ background: "linear-gradient(135deg, #e8f4fd 0%, #fef9f0 50%, #f0f4ff 100%)" }}
     >
-      {/* ── Glassmorphism 헤더 ── */}
+      {/* 헤더 */}
       <header
         className="px-6 py-3 flex items-center justify-between sticky top-0 z-20"
         style={{
-          background: "rgba(255,255,255,0.55)",
-          backdropFilter: "blur(18px)",
-          WebkitBackdropFilter: "blur(18px)",
-          borderBottom: "1px solid rgba(255,255,255,0.4)",
-          boxShadow: "0 2px 20px rgba(0,0,0,0.06)",
+          background: "#ffffff",
+          borderBottom: "1px solid #e5e7eb",
+          boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
         }}
       >
         {/* 로고 */}
@@ -47,14 +43,11 @@ export default function Home() {
         </button>
 
         <div className="flex items-center gap-2">
-          {/* 상태 인디케이터 배지 */}
           <div className="hidden sm:flex items-center gap-1.5">
             <span
               className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium"
               style={{
-                background: status?.indexed
-                  ? "rgba(22,163,74,0.1)"
-                  : "rgba(245,158,11,0.1)",
+                background: status?.indexed ? "rgba(22,163,74,0.1)" : "rgba(245,158,11,0.1)",
                 color: status?.indexed ? "#15803d" : "#b45309",
                 border: `1px solid ${status?.indexed ? "rgba(22,163,74,0.2)" : "rgba(245,158,11,0.2)"}`,
               }}
@@ -81,16 +74,11 @@ export default function Home() {
             </span>
           </div>
 
-          {/* 새 대화 버튼 */}
           <Button
             variant="outline"
             size="sm"
             onClick={goHome}
             className="flex items-center gap-1.5 text-xs rounded-full h-8 px-3"
-            style={{
-              background: "rgba(255,255,255,0.7)",
-              border: "1px solid rgba(0,0,0,0.1)",
-            }}
           >
             <RotateCcw className="h-3.5 w-3.5" />
             새 대화
@@ -98,7 +86,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* 채팅 메인 */}
       <main className="flex-1 flex flex-col max-w-3xl w-full mx-auto px-4 py-6 h-[calc(100dvh-57px)]">
         <ChatInterface key={chatKey} />
       </main>

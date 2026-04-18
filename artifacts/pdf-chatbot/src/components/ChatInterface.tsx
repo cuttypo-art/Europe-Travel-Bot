@@ -70,11 +70,9 @@ export function ChatInterface() {
     <div
       className="flex flex-col h-full rounded-3xl overflow-hidden"
       style={{
-        background: "rgba(255,255,255,0.6)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        border: "1px solid rgba(255,255,255,0.7)",
-        boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
       }}
     >
       {/* 메시지 영역 */}
@@ -91,15 +89,15 @@ export function ChatInterface() {
       {/* ── Pill 입력창 ── */}
       <div
         className="p-4"
-        style={{ borderTop: "1px solid rgba(0,0,0,0.06)", background: "rgba(255,255,255,0.5)" }}
+        style={{ borderTop: "1px solid #e5e7eb", background: "#f9fafb" }}
       >
         <form
           onSubmit={handleSubmit}
           className="flex items-end gap-2 rounded-full px-4 py-2"
           style={{
-            background: "rgba(255,255,255,0.9)",
-            border: "1px solid rgba(0,0,0,0.1)",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
           }}
         >
           <Textarea
@@ -166,23 +164,21 @@ function SuggestionChip({ label, onClick }: { label: string; onClick: () => void
       onClick={onClick}
       className="group text-left text-sm text-gray-700 font-medium px-4 py-3.5 rounded-2xl transition-all duration-200 ease-out"
       style={{
-        background: "rgba(255,255,255,0.85)",
-        border: "1px solid rgba(0,0,0,0.07)",
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
       }}
       onMouseEnter={e => {
         const el = e.currentTarget;
         el.style.transform = "translateY(-3px)";
         el.style.boxShadow = "0 8px 20px rgba(59,130,246,0.15)";
-        el.style.background = "rgba(255,255,255,1)";
         el.style.borderColor = "rgba(59,130,246,0.3)";
       }}
       onMouseLeave={e => {
         const el = e.currentTarget;
         el.style.transform = "translateY(0)";
         el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
-        el.style.background = "rgba(255,255,255,0.85)";
-        el.style.borderColor = "rgba(0,0,0,0.07)";
+        el.style.borderColor = "#e5e7eb";
       }}
     >
       {label}
@@ -216,10 +212,10 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
                   boxShadow: "0 4px 14px rgba(99,102,241,0.25)",
                 }
               : {
-                  background: "rgba(255,255,255,0.85)",
+                  background: "#ffffff",
                   color: "#1f2937",
                   borderRadius: "20px 20px 20px 4px",
-                  border: "1px solid rgba(0,0,0,0.07)",
+                  border: "1px solid #e5e7eb",
                   boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
                 }
           }
@@ -274,7 +270,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block text-[11px] p-2.5 rounded-xl border hover:bg-blue-50 transition-colors"
-                      style={{ background: "rgba(239,246,255,0.7)", borderColor: "rgba(191,219,254,0.6)" }}
+                      style={{ background: "#eff6ff", borderColor: "#bfdbfe" }}
                     >
                       <div className="flex items-center gap-1 font-medium text-blue-600 mb-0.5">
                         <ExternalLink className="h-3 w-3 shrink-0" />
@@ -312,9 +308,9 @@ function TypingIndicator() {
       <div
         className="px-5 py-3.5 flex items-center gap-1.5"
         style={{
-          background: "rgba(255,255,255,0.85)",
+          background: "#ffffff",
           borderRadius: "20px 20px 20px 4px",
-          border: "1px solid rgba(0,0,0,0.07)",
+          border: "1px solid #e5e7eb",
         }}
       >
         <span className="text-xs text-gray-400 mr-1">검색 중</span>
