@@ -46,7 +46,7 @@ const SUGGESTIONS = [
   "유럽 숙소 고를 때 체크리스트가 뭐야?",
   "유럽 소매치기 방지 꿀팁 알려줘",
   "유럽 크리스마스 마켓 필수 먹거리는?",
-  "구글맵으로 내 주변 맛집 찾는 법은?",
+  "부다페스트 야경명소는?",
 ];
 const GMAP_CHIP = "📍 구글맵 사용법 알려줘";
 
@@ -244,18 +244,17 @@ function WelcomeScreen({ onSuggest }: { hasPdf: boolean; onSuggest: (q: string) 
       >
         <BookCoverFrame />
         <p className="text-sm text-blue-500 mt-2.5 font-semibold group-hover:underline">
-          📖 작가의 여행 에세이 읽어보기
+          📖 교보문고에서 바로보기
         </p>
       </a>
 
       {/* 타이틀 */}
       <div className="mb-5">
         <h2 className="text-[1.6rem] font-extrabold tracking-tight text-gray-800 leading-tight">
-          작가와 함께하는 설레는 유럽 여행,<br />무엇이든 물어보세요
+          유럽 여행, 함께 준비할까요?
         </h2>
-        <p className="text-[0.95rem] text-gray-500 mt-3 max-w-sm mx-auto leading-loose">
-          작가의 생생한 여행기와 구글맵 활용법을<br />
-          바탕으로 친절히 답해드립니다.
+        <p className="text-[0.95rem] text-gray-500 mt-1 mx-auto leading-relaxed">
+          작가의 생생한 여행기와 최신 웹검색을 기반으로 답해드립니다.
         </p>
       </div>
 
