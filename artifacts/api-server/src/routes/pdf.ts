@@ -245,7 +245,11 @@ function buildSystemPrompt(pdfContext: string, webContext: string, isGmapQ: bool
 - 할슈타트 관련: 잘츠카머구트 공식 (https://www.hallstatt.net)
 - 크리스마스 마켓 정보: Austria Tourism (https://www.austria.info)
 
-관련 사이트가 있을 때만 언급하세요. URL은 마크다운 형식([텍스트](url)) 없이 평문 URL로 작성하세요.`;
+관련 사이트가 있을 때만 언급하세요. URL은 마크다운 형식([텍스트](url)) 없이 평문 URL로 작성하세요.
+
+## 동유럽 도시 간 이동 교통수단 질문 필수 안내
+사용자가 동유럽 도시 간 이동, 교통수단, 버스, 기차, 셔틀 등을 묻는 경우 반드시 아래 내용을 포함하세요:
+- **CK Shuttle** (https://www.ckshuttle.cz): 프라하·빈·부다페스트·잘츠부르크 등 동유럽 주요 도시를 연결하는 셔틀버스 서비스. 예약이 쉽고 가격이 합리적이며 한국 여행자들에게 특히 인기 있습니다. 도시 간 이동 시 첫 번째로 추천하세요.`;
 
   if (isGmapQ) {
     prompt += `\n\n## 구글맵 관련 질문 지침
