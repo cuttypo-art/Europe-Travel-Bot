@@ -155,64 +155,12 @@ export function ChatInterface() {
   );
 }
 
-/* ── SVG 아이콘 세트 (단색 라인 아트) ─────────────────────────────────── */
-const ICON_COLOR = "#3b82f6";
-const ICON_PROPS = { width: 36, height: 36, viewBox: "0 0 24 24", fill: "none", stroke: ICON_COLOR, strokeWidth: 1.4, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-
-function IconSkyline() {
-  return (
-    <svg {...ICON_PROPS}>
-      <rect x="2" y="13" width="4" height="8" rx="0.5" />
-      <rect x="7" y="9" width="4" height="12" rx="0.5" />
-      <rect x="12" y="5" width="5" height="16" rx="0.5" />
-      <rect x="18" y="10" width="4" height="11" rx="0.5" />
-      <line x1="12" y1="5" x2="14" y2="2" />
-      <line x1="13" y1="2" x2="15" y2="2" />
-      <line x1="1" y1="21" x2="23" y2="21" />
-    </svg>
-  );
-}
+/* ── 책 표지 fallback 아이콘 ─────────────────────────────────────────── */
 function IconPlane() {
   return (
-    <svg {...ICON_PROPS}>
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
       <path d="M22 2L11 13" />
       <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-    </svg>
-  );
-}
-function IconMap() {
-  return (
-    <svg {...ICON_PROPS}>
-      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-      <line x1="8" y1="2" x2="8" y2="18" />
-      <line x1="16" y1="6" x2="16" y2="22" />
-    </svg>
-  );
-}
-function IconCoffee() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-      <line x1="6" y1="1" x2="6" y2="4" />
-      <line x1="10" y1="1" x2="10" y2="4" />
-      <line x1="14" y1="1" x2="14" y2="4" />
-    </svg>
-  );
-}
-function IconCastle() {
-  return (
-    <svg {...ICON_PROPS}>
-      <line x1="3" y1="6" x2="3" y2="3" />
-      <line x1="7" y1="6" x2="7" y2="3" />
-      <line x1="3" y1="3" x2="7" y2="3" />
-      <line x1="13" y1="6" x2="13" y2="3" />
-      <line x1="17" y1="6" x2="17" y2="3" />
-      <line x1="13" y1="3" x2="17" y2="3" />
-      <rect x="2" y="6" width="7" height="15" rx="0.5" />
-      <rect x="12" y="6" width="7" height="15" rx="0.5" />
-      <rect x="8" y="11" width="7" height="10" rx="0.5" />
-      <line x1="1" y1="21" x2="23" y2="21" />
     </svg>
   );
 }
@@ -225,11 +173,11 @@ function BookCoverFrame() {
     <div
       className="relative overflow-hidden transition-transform duration-200 group-hover:scale-[1.03]"
       style={{
-        width: 110,
-        height: 155,
+        width: 126,
+        height: 178,
         borderRadius: 10,
         border: "1px solid #e0e7ef",
-        boxShadow: "0 6px 24px rgba(0,0,0,0.13), 0 1.5px 4px rgba(0,0,0,0.08)",
+        boxShadow: "0 16px 48px rgba(0,0,0,0.24), 0 6px 16px rgba(0,0,0,0.14)",
         background: "linear-gradient(135deg, #e8f0fe 0%, #f8faff 100%)",
       }}
     >
@@ -267,16 +215,7 @@ function WelcomeScreen({ onSuggest }: { hasPdf: boolean; onSuggest: (q: string) 
   return (
     <div className="flex flex-col items-center justify-start pt-4 pb-2 text-center">
 
-      {/* 1. SVG 라인아트 아이콘 세트 */}
-      <div className="flex items-end justify-center gap-7 mb-4">
-        <div className="opacity-50"><IconCastle /></div>
-        <div className="opacity-70"><IconMap /></div>
-        <div className="opacity-100"><IconPlane /></div>
-        <div className="opacity-70"><IconCoffee /></div>
-        <div className="opacity-50"><IconSkyline /></div>
-      </div>
-
-      {/* 2. 책 표지 이미지 프레임 */}
+      {/* 책 표지 이미지 프레임 */}
       <a
         href={BOOK_URL}
         target="_blank"
