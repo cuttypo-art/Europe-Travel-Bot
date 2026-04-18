@@ -48,6 +48,7 @@ const SUGGESTIONS = [
   "유럽 크리스마스 마켓 필수 먹거리는?",
   "구글맵으로 내 주변 맛집 찾는 법은?",
 ];
+const GMAP_CHIP = "📍 구글맵 사용법 알려줘";
 
 export function ChatInterface() {
   const { data: status } = useGetPdfStatus();
@@ -135,22 +136,23 @@ export function ChatInterface() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="동유럽 여행에 대해 무엇이든 물어보세요..."
-            className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 resize-none min-h-[28px] max-h-[120px] py-1.5 text-sm placeholder:text-gray-400"
+            placeholder="유럽 여행, 구글맵 사용법 등 무엇이든 물어보세요..."
+            className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 resize-none min-h-[32px] max-h-[120px] py-2 text-base placeholder:text-gray-400"
             rows={1}
             disabled={chatMutation.isPending}
           />
           <button
             type="submit"
             disabled={!input.trim() || chatMutation.isPending}
-            className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed mb-0.5"
+            className="h-10 rounded-full flex items-center gap-1.5 px-4 shrink-0 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed mb-0.5 text-sm font-semibold text-white"
             style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}
           >
-            <Send className="h-4 w-4 text-white" />
+            <Send className="h-4 w-4" />
+            전송
           </button>
         </form>
-        <p className="text-[11px] text-gray-400 mt-2 text-center">
-          여행기 내용 + 최신 인터넷 정보를 함께 검색해서 답변드려요
+        <p className="text-[12px] text-gray-400 mt-2 text-center">
+          여행기 내용 + 구글맵 가이드 + 최신 인터넷 정보를 함께 검색해서 답변드려요
         </p>
       </div>
     </div>
@@ -222,27 +224,48 @@ function WelcomeScreen({ onSuggest }: { hasPdf: boolean; onSuggest: (q: string) 
         href={BOOK_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="block mb-4 group"
+        className="block mb-5 group"
         title="교보문고에서 책 보기"
       >
         <BookCoverFrame />
-        <p className="text-[11px] text-blue-500 mt-2 font-medium group-hover:underline">
-          📖 교보문고에서 보기
+        <p className="text-sm text-blue-500 mt-2.5 font-semibold group-hover:underline">
+          📖 작가의 여행 에세이 읽어보기
         </p>
       </a>
 
-      {/* 3. 타이틀 */}
-      <div className="mb-4">
-        <h2 className="text-2xl font-extrabold tracking-tight text-gray-800 leading-tight">
-          동유럽 여행, 뭐든 물어봐!
+      {/* 타이틀 */}
+      <div className="mb-5">
+        <h2 className="text-[1.6rem] font-extrabold tracking-tight text-gray-800 leading-tight">
+          작가와 함께하는 설레는 유럽 여행,<br />무엇이든 물어보세요
         </h2>
-        <p className="text-sm text-gray-400 mt-2 max-w-xs mx-auto leading-relaxed">
-          출간 작가의 생생한 동유럽 여행 에세이와<br />
-          최신 인터넷 정보를 바탕으로 답해드려요.
+        <p className="text-[0.95rem] text-gray-500 mt-3 max-w-sm mx-auto leading-loose">
+          작가의 생생한 여행기와 구글맵 활용법을<br />
+          바탕으로 친절히 답해드립니다.
         </p>
       </div>
 
-      {/* 4. 질문 카드 */}
+      {/* 구글맵 강조 버튼 */}
+      <button
+        onClick={() => onSuggest(GMAP_CHIP)}
+        className="w-full max-w-xl mb-3 text-center font-bold px-5 py-4 rounded-2xl transition-all duration-200 ease-out text-base"
+        style={{
+          background: "#fefce8",
+          border: "2px solid #fde047",
+          boxShadow: "0 4px 14px rgba(250,204,21,0.25)",
+          color: "#713f12",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 22px rgba(250,204,21,0.4)"; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(250,204,21,0.25)"; }}
+      >
+        {GMAP_CHIP}
+      </button>
+
+      {/* 안내 문구 */}
+      <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+        궁금한 내용을 아래 버튼에서 고르거나 직접 입력해 보세요.
+      </p>
+
+      {/* 질문 카드 */}
       <div className="grid grid-cols-2 gap-3 w-full max-w-xl">
         {SUGGESTIONS.map(q => (
           <SuggestionChip key={q} label={q} onClick={() => onSuggest(q)} />
@@ -256,11 +279,13 @@ function SuggestionChip({ label, onClick }: { label: string; onClick: () => void
   return (
     <button
       onClick={onClick}
-      className="group text-left text-sm text-gray-700 font-medium px-4 py-3.5 rounded-2xl transition-all duration-200 ease-out"
+      className="group text-left font-medium px-4 py-4 rounded-2xl transition-all duration-200 ease-out leading-snug"
       style={{
         background: "#ffffff",
         border: "1px solid #e5e7eb",
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+        fontSize: "0.95rem",
+        color: "#374151",
       }}
       onMouseEnter={e => {
         const el = e.currentTarget;

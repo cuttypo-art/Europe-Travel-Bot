@@ -36,7 +36,7 @@ export default function Home() {
           </div>
           <div className="text-left">
             <h1 className="text-base font-bold tracking-tight leading-none text-gray-800">
-              동유럽 여행 챗봇
+              똑똑한 유럽여행 도우미
             </h1>
           </div>
         </button>
