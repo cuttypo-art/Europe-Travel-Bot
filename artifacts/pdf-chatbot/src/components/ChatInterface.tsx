@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useChatWithPdf, useGetPdfStatus } from "@workspace/api-client-react";
+import { useGetPdfStatus } from "@workspace/api-client-react";
 import { Send, User, Bot, Loader2, Globe, BookOpen, ExternalLink } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -50,10 +50,11 @@ const SUGGESTIONS = [
 
 export function ChatInterface() {
   const { data: status } = useGetPdfStatus();
-  const chatMutation = useChatWithPdf();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -62,31 +63,89 @@ export function ChatInterface() {
   }, [messages]);
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || chatMutation.isPending) return;
+    if (!text.trim() || isStreaming) return;
     setInput("");
-    const newMessages: ChatMessage[] = [...messages, { role: "user", content: text.trim() }];
-    setMessages(newMessages);
+    setIsStreaming(true);
+
+    const history = messages.map(m => ({ role: m.role, content: m.content }));
+    const userMessages: ChatMessage[] = [...messages, { role: "user", content: text.trim() }];
+
+    // 빈 어시스턴트 메시지를 미리 추가 (스트리밍용)
+    const assistantIdx = userMessages.length;
+    setMessages([...userMessages, { role: "assistant", content: "" }]);
+
+    abortRef.current = new AbortController();
+
     try {
-      const response = await chatMutation.mutateAsync({
-        data: {
-          question: text.trim(),
-          history: messages.map(m => ({ role: m.role, content: m.content })),
-        },
+      const res = await fetch("/api/pdf/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: text.trim(), history }),
+        signal: abortRef.current.signal,
       });
-      setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: response.answer,
-          sources: response.sources,
-          webResults: (response as any).webResults ?? [],
-        },
-      ]);
-    } catch {
-      setMessages([
-        ...newMessages,
-        { role: "assistant", content: "죄송해요, 오류가 발생했어요. 다시 시도해 주세요." },
-      ]);
+
+      if (!res.ok || !res.body) throw new Error("Stream failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accContent = "";
+      let sources: string[] = [];
+      let webResults: WebResult[] = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            // event type stored, parsed with next data line
+          } else if (line.startsWith("data: ")) {
+            const raw = line.slice(6);
+            try {
+              const parsed = JSON.parse(raw);
+              if (parsed.token !== undefined) {
+                accContent += parsed.token;
+                setMessages(prev => {
+                  const next = [...prev];
+                  if (next[assistantIdx]) {
+                    next[assistantIdx] = { ...next[assistantIdx], content: accContent };
+                  }
+                  return next;
+                });
+              } else if (parsed.sources !== undefined) {
+                sources = parsed.sources;
+                webResults = parsed.webResults ?? [];
+              }
+            } catch {}
+          }
+        }
+      }
+
+      // 완료 후 소스 붙이기
+      setMessages(prev => {
+        const next = [...prev];
+        if (next[assistantIdx]) {
+          next[assistantIdx] = { ...next[assistantIdx], content: accContent, sources, webResults };
+        }
+        return next;
+      });
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        setMessages(prev => {
+          const next = [...prev];
+          if (next[assistantIdx]) {
+            next[assistantIdx] = { ...next[assistantIdx], content: "죄송해요, 오류가 발생했어요. 다시 시도해 주세요." };
+          }
+          return next;
+        });
+      }
+    } finally {
+      setIsStreaming(false);
     }
   };
 
@@ -109,9 +168,17 @@ export function ChatInterface() {
         {messages.length === 0 ? (
           <WelcomeScreen hasPdf={!!status?.indexed} onSuggest={q => { setInput(q); sendMessage(q); }} />
         ) : (
-          messages.map((msg, idx) => <MessageBubble key={idx} msg={msg} />)
+          messages.map((msg, idx) => (
+            <MessageBubble
+              key={idx}
+              msg={msg}
+              streaming={isStreaming && idx === messages.length - 1 && msg.role === "assistant"}
+            />
+          ))
         )}
-        {chatMutation.isPending && <TypingIndicator />}
+        {isStreaming && messages.length > 0 && messages[messages.length - 1].content === "" && (
+          <TypingIndicator />
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -136,11 +203,11 @@ export function ChatInterface() {
             placeholder="동유럽 여행에 대해 무엇이든 물어보세요..."
             className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 resize-none min-h-[28px] max-h-[120px] py-1.5 text-sm placeholder:text-gray-400"
             rows={1}
-            disabled={chatMutation.isPending}
+            disabled={isStreaming}
           />
           <button
             type="submit"
-            disabled={!input.trim() || chatMutation.isPending}
+            disabled={!input.trim() || isStreaming}
             className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed mb-0.5"
             style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}
           >
@@ -340,7 +407,7 @@ function SuggestionChip({ label, onClick }: { label: string; onClick: () => void
 }
 
 /* ── 메시지 버블 ─────────────────────────────────────────────────────── */
-function MessageBubble({ msg }: { msg: ChatMessage }) {
+function MessageBubble({ msg, streaming }: { msg: ChatMessage; streaming?: boolean }) {
   const isUser = msg.role === "user";
   return (
     <div className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -349,7 +416,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 mt-1"
           style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}
         >
-          <Bot className="h-4 w-4 text-white" />
+          {streaming ? <Loader2 className="h-4 w-4 text-white animate-spin" /> : <Bot className="h-4 w-4 text-white" />}
         </div>
       )}
 
@@ -373,7 +440,10 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
                 }
           }
         >
-          {isUser ? msg.content : renderTextWithLinks(msg.content)}
+          {isUser
+            ? msg.content
+            : <>{renderTextWithLinks(msg.content)}{streaming && <span className="inline-block w-0.5 h-4 bg-gray-400 ml-0.5 animate-pulse align-middle" />}</>
+          }
         </div>
 
         {!isUser && (

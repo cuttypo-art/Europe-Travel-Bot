@@ -232,6 +232,102 @@ router.post("/chat", async (req: Request, res: Response) => {
   }
 });
 
+// ── 채팅 스트리밍 (SSE) ───────────────────────────────────────────────────────
+router.post("/chat/stream", async (req: Request, res: Response) => {
+  const { question, history = [] } = req.body;
+
+  if (!question || typeof question !== "string") {
+    res.status(400).json({ error: "Question is required" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const send = (event: string, data: unknown) => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    const [webResults, pdfResult] = await Promise.all([
+      tavilySearch(question),
+      (async () => {
+        if (!vectorStore) return { context: "", sources: [] as string[] };
+        const queryEmbedding = await getEmbedding(question);
+        const scored = vectorStore.chunks
+          .map(chunk => ({ chunk, score: cosineSimilarity(queryEmbedding, chunk.embedding) }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 5);
+        const context = scored.map((s, i) => `[여행기 ${i + 1}] ${s.chunk.text}`).join("\n\n");
+        const sources = scored.slice(0, 3).map(s =>
+          s.chunk.text.slice(0, 200) + (s.chunk.text.length > 200 ? "..." : "")
+        );
+        return { context, sources };
+      })(),
+    ]);
+
+    const { context: pdfContext, sources } = pdfResult;
+    const webContext = webResults.length > 0
+      ? webResults.map((r, i) => `[웹 ${i + 1}] ${r.title}\n${r.content}\n출처: ${r.url}`).join("\n\n")
+      : "";
+
+    // 소스 먼저 전송
+    send("sources", { sources, webResults });
+
+    let systemPrompt = `당신은 친절하고 유용한 동유럽 여행 전문 챗봇입니다.
+여행자의 질문에 자세하고 실용적으로 답해주세요. 질문과 같은 언어로 답변하세요 (한국어 질문 → 한국어 답변).
+
+## 관련 사이트 안내 지침
+답변 내용에 따라 아래 사이트를 자연스럽게 언급하고, URL을 그대로 포함해 주세요 (마크다운 없이 URL 그대로):
+
+- 투어·액티비티 예약: GetYourGuide (https://www.getyourguide.com)
+- 체코·슬로바키아 셔틀버스: CK Shuttle (https://www.ckshuttle.cz)
+- 동유럽 버스: FlixBus (https://www.flixbus.com), RegioJet (https://www.regiojet.com)
+- 기차·교통 통합 검색: Omio (https://www.omio.com), Trainline (https://www.thetrainline.com)
+- 숙소 예약: Booking.com (https://www.booking.com), Hostelworld (https://www.hostelworld.com)
+- 빈·잘츠부르크 교통: ÖBB (https://www.oebb.at)
+- 체코 철도: České dráhy (https://www.cd.cz)
+- 헝가리 철도: MÁV (https://www.mavcsoport.hu)
+- 할슈타트 관련: 잘츠카머구트 공식 (https://www.hallstatt.net)
+- 크리스마스 마켓 정보: Austria Tourism (https://www.austria.info)
+
+관련 사이트가 있을 때만 언급하세요. URL은 마크다운 형식([텍스트](url)) 없이 평문 URL로 작성하세요.`;
+
+    if (pdfContext) systemPrompt += `\n\n## 여행기 (저자의 직접 경험)\n${pdfContext}`;
+    if (webContext) systemPrompt += `\n\n## 최신 인터넷 정보\n${webContext}`;
+    if (pdfContext || webContext) systemPrompt += `\n\n위 정보를 종합하여 답변하세요. 여행기의 개인 경험과 최신 웹 정보를 구분해서 설명하면 더 좋습니다.`;
+
+    const messages: OpenAI.ChatCompletionMessageParam[] = [
+      { role: "system", content: systemPrompt },
+      ...history.map((m: { role: string; content: string }) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })),
+      { role: "user", content: question },
+    ];
+
+    const stream = await getOpenAI().chat.completions.create({
+      model: "gpt-4o-mini",
+      messages,
+      temperature: 0.3,
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const token = chunk.choices[0]?.delta?.content ?? "";
+      if (token) send("token", { token });
+    }
+
+    send("done", {});
+    res.end();
+  } catch (err: any) {
+    send("error", { message: err.message });
+    res.end();
+  }
+});
+
 // ── 상태 조회 ─────────────────────────────────────────────────────────────────
 router.get("/status", (_req: Request, res: Response) => {
   if (!vectorStore) {
