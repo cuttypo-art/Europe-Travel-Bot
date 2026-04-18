@@ -1,7 +1,9 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 import OpenAI from "openai";
-// pdf-parse v1 exports a CJS function; use globalThis.require which is set by the esbuild banner
+import fs from "fs";
+import path from "path";
+
 const pdfParse: (buffer: Buffer) => Promise<{ text: string; numpages: number }> =
   (globalThis as any).require("pdf-parse");
 
@@ -35,6 +37,50 @@ interface WebResult {
 }
 
 let vectorStore: VectorStore | null = null;
+
+// ── 서버 시작 시 data/travel.pdf 자동 로딩 ───────────────────────────────────
+export async function autoLoadTravelPdf() {
+  const dataDir = path.resolve(process.cwd(), "data");
+  const pdfPath = path.join(dataDir, "travel.pdf");
+
+  if (!fs.existsSync(pdfPath)) {
+    console.log("[travel-pdf] data/travel.pdf 없음 — 파일을 넣으면 자동 로딩됩니다.");
+    return;
+  }
+
+  try {
+    console.log("[travel-pdf] data/travel.pdf 로딩 중...");
+    const buffer = fs.readFileSync(pdfPath);
+    await indexPdfBuffer(buffer, "travel.pdf");
+    console.log(`[travel-pdf] 로딩 완료: ${vectorStore?.chunks.length}개 청크`);
+  } catch (err: any) {
+    console.error("[travel-pdf] 로딩 실패:", err.message);
+  }
+}
+
+// ── 공통 PDF 인덱싱 함수 ─────────────────────────────────────────────────────
+async function indexPdfBuffer(buffer: Buffer, filename: string) {
+  const pdfData = await pdfParse(buffer);
+  const text = pdfData.text.replace(/\s+/g, " ").trim();
+  if (text.length < 50) throw new Error("PDF에서 텍스트를 읽을 수 없습니다.");
+
+  const rawChunks = splitIntoChunks(text);
+  const chunks: Chunk[] = [];
+
+  const batchSize = 20;
+  for (let i = 0; i < rawChunks.length; i += batchSize) {
+    const batch = rawChunks.slice(i, i + batchSize);
+    const embRes = await getOpenAI().embeddings.create({
+      model: "text-embedding-3-small",
+      input: batch.map(c => c.slice(0, 8000)),
+    });
+    for (let j = 0; j < batch.length; j++) {
+      chunks.push({ text: batch[j], embedding: embRes.data[j].embedding });
+    }
+  }
+
+  vectorStore = { filename, chunks };
+}
 
 function cosineSimilarity(a: number[], b: number[]): number {
   let dot = 0, normA = 0, normB = 0;
@@ -89,92 +135,21 @@ async function tavilySearch(query: string): Promise<WebResult[]> {
       }),
     });
 
-    if (!response.ok) {
-      console.error("Tavily search failed:", response.status, await response.text());
-      return [];
-    }
-
+    if (!response.ok) return [];
     const data: any = await response.json();
     return (data.results ?? []).map((r: any) => ({
       title: r.title ?? "",
       url: r.url ?? "",
       content: (r.content ?? "").slice(0, 600),
     }));
-  } catch (err) {
-    console.error("Tavily search error:", err);
+  } catch {
     return [];
   }
 }
 
-router.post("/upload", (req: Request, res: Response) => {
-  upload.single("file")(req, res, async (err: any) => {
-    if (err) {
-      if (err.code === "LIMIT_FILE_SIZE") {
-        res.status(400).json({ error: "파일 크기가 너무 큽니다. 최대 200MB까지 업로드 가능합니다." });
-      } else {
-        res.status(400).json({ error: `업로드 오류: ${err.message}` });
-      }
-      return;
-    }
-    await handleUpload(req, res);
-  });
-});
-
-async function handleUpload(req: Request, res: Response) {
-  if (!req.file) {
-    res.status(400).json({ error: "No file provided" });
-    return;
-  }
-  if (!req.file.mimetype.includes("pdf")) {
-    res.status(400).json({ error: "Only PDF files are supported" });
-    return;
-  }
-
-  try {
-    const pdfData = await pdfParse(req.file.buffer);
-    const text = pdfData.text.replace(/\s+/g, " ").trim();
-
-    if (text.length < 50) {
-      res.status(400).json({ error: "PDF appears to be empty or unreadable" });
-      return;
-    }
-
-    // Fix filename encoding (multer may receive Latin-1 encoded UTF-8 bytes)
-    const rawName = req.file.originalname;
-    const filename = (() => {
-      try { return Buffer.from(rawName, "latin1").toString("utf8"); } catch { return rawName; }
-    })();
-
-    const rawChunks = splitIntoChunks(text);
-    const chunks: Chunk[] = [];
-
-    const batchSize = 20;
-    for (let i = 0; i < rawChunks.length; i += batchSize) {
-      const batch = rawChunks.slice(i, i + batchSize);
-      const embRes = await getOpenAI().embeddings.create({
-        model: "text-embedding-3-small",
-        input: batch.map(c => c.slice(0, 8000)),
-      });
-      for (let j = 0; j < batch.length; j++) {
-        chunks.push({ text: batch[j], embedding: embRes.data[j].embedding });
-      }
-    }
-
-    vectorStore = { filename, chunks };
-
-    res.json({
-      success: true,
-      filename,
-      chunkCount: chunks.length,
-      message: `PDF indexed successfully with ${chunks.length} chunks`,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: `Failed to process PDF: ${err.message}` });
-  }
-}
-
+// ── 채팅 (PDF RAG + Tavily 항상 동시 실행) ───────────────────────────────────
 router.post("/chat", async (req: Request, res: Response) => {
-  const { question, history = [], webSearch = false } = req.body;
+  const { question, history = [] } = req.body;
 
   if (!question || typeof question !== "string") {
     res.status(400).json({ error: "Question is required" });
@@ -182,50 +157,41 @@ router.post("/chat", async (req: Request, res: Response) => {
   }
 
   try {
-    // --- PDF RAG (if indexed) ---
-    let pdfContext = "";
-    const sources: string[] = [];
+    // PDF RAG와 Tavily 검색 병렬 실행
+    const [webResults, pdfResult] = await Promise.all([
+      tavilySearch(question),
+      (async () => {
+        if (!vectorStore) return { context: "", sources: [] };
+        const queryEmbedding = await getEmbedding(question);
+        const scored = vectorStore.chunks
+          .map(chunk => ({ chunk, score: cosineSimilarity(queryEmbedding, chunk.embedding) }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 5);
+        const context = scored.map((s, i) => `[여행기 ${i + 1}] ${s.chunk.text}`).join("\n\n");
+        const sources = scored.slice(0, 3).map(s =>
+          s.chunk.text.slice(0, 200) + (s.chunk.text.length > 200 ? "..." : "")
+        );
+        return { context, sources };
+      })(),
+    ]);
 
-    if (vectorStore) {
-      const queryEmbedding = await getEmbedding(question);
-      const scored = vectorStore.chunks
-        .map(chunk => ({ chunk, score: cosineSimilarity(queryEmbedding, chunk.embedding) }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
+    const { context: pdfContext, sources } = pdfResult;
 
-      pdfContext = scored.map((s, i) => `[여행기 ${i + 1}] ${s.chunk.text}`).join("\n\n");
-      scored.slice(0, 3).forEach(s =>
-        sources.push(s.chunk.text.slice(0, 200) + (s.chunk.text.length > 200 ? "..." : ""))
-      );
-    }
+    const webContext = webResults.length > 0
+      ? webResults.map((r, i) => `[웹 ${i + 1}] ${r.title}\n${r.content}\n출처: ${r.url}`).join("\n\n")
+      : "";
 
-    // --- Tavily Web Search (if requested) ---
-    let webResults: WebResult[] = [];
-    let webContext = "";
-
-    if (webSearch) {
-      webResults = await tavilySearch(question);
-      if (webResults.length > 0) {
-        webContext = webResults
-          .map((r, i) => `[웹 ${i + 1}] ${r.title}\n${r.content}\n출처: ${r.url}`)
-          .join("\n\n");
-      }
-    }
-
-    // --- Build system prompt ---
-    let systemPrompt = `당신은 친절하고 유용한 여행 챗봇입니다. 동유럽 여행 전문가로서 여행자의 질문에 자세하게 답해주세요.
-질문과 같은 언어로 답변하세요 (한국어 질문 → 한국어 답변).`;
+    let systemPrompt = `당신은 친절하고 유용한 동유럽 여행 전문 챗봇입니다.
+여행자의 질문에 자세하고 실용적으로 답해주세요. 질문과 같은 언어로 답변하세요 (한국어 질문 → 한국어 답변).`;
 
     if (pdfContext) {
-      systemPrompt += `\n\n## 여행기 (개인 경험)\n${pdfContext}`;
+      systemPrompt += `\n\n## 여행기 (저자의 직접 경험)\n${pdfContext}`;
     }
     if (webContext) {
       systemPrompt += `\n\n## 최신 인터넷 정보\n${webContext}`;
     }
-    if (!pdfContext && !webContext) {
-      systemPrompt += `\n\n현재 참고할 문서나 웹 정보가 없습니다. 일반 여행 지식을 바탕으로 답변해주세요.`;
-    } else {
-      systemPrompt += `\n\n위 정보를 종합하여 답변하되, 여행기의 개인 경험과 최신 웹 정보를 구분하여 설명해주세요.`;
+    if (pdfContext || webContext) {
+      systemPrompt += `\n\n위 정보를 종합하여 답변하세요. 여행기의 개인 경험과 최신 웹 정보를 구분해서 설명하면 더 좋습니다.`;
     }
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
@@ -250,6 +216,7 @@ router.post("/chat", async (req: Request, res: Response) => {
   }
 });
 
+// ── 상태 조회 ─────────────────────────────────────────────────────────────────
 router.get("/status", (_req: Request, res: Response) => {
   if (!vectorStore) {
     res.json({ indexed: false });
@@ -260,6 +227,35 @@ router.get("/status", (_req: Request, res: Response) => {
       chunkCount: vectorStore.chunks.length,
     });
   }
+});
+
+// ── 관리자용: PDF 교체 업로드 (숨겨진 엔드포인트) ─────────────────────────────
+router.post("/admin/upload", (req: Request, res: Response) => {
+  upload.single("file")(req, res, async (err: any) => {
+    if (err) {
+      res.status(400).json({ error: err.code === "LIMIT_FILE_SIZE" ? "파일이 너무 큽니다 (최대 200MB)" : err.message });
+      return;
+    }
+    if (!req.file) { res.status(400).json({ error: "파일 없음" }); return; }
+    if (!req.file.mimetype.includes("pdf")) { res.status(400).json({ error: "PDF만 가능" }); return; }
+
+    try {
+      const rawName = req.file.originalname;
+      const filename = (() => {
+        try { return Buffer.from(rawName, "latin1").toString("utf8"); } catch { return rawName; }
+      })();
+
+      // data/ 에도 저장 (서버 재시작 시 자동 로딩)
+      const dataDir = path.resolve(process.cwd(), "data");
+      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+      fs.writeFileSync(path.join(dataDir, "travel.pdf"), req.file.buffer);
+
+      await indexPdfBuffer(req.file.buffer, filename);
+      res.json({ success: true, filename, chunkCount: vectorStore?.chunks.length });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 });
 
 export default router;
