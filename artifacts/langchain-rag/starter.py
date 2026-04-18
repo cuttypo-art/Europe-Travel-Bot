@@ -152,8 +152,7 @@ if uploaded_file:
         ]
 
         # 스트리밍 콜백 구현
-        from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-        from langchain.callbacks.base import BaseCallbackHandler
+        from langchain_core.callbacks import BaseCallbackHandler
 
         class StreamlitCallbackHandler(BaseCallbackHandler):
             def __init__(self, container):
@@ -174,7 +173,7 @@ if uploaded_file:
         )
 
         with st.spinner("LLM 답변 생성 중..."):
-            response = llm(rag_prompt)
+            response = llm.invoke(rag_prompt)
 
         st.divider()
         st.caption(f"모델: `{model_name}` | 검색 문서: `{k}개` | 청크: `{len(all_splits)}개`")
