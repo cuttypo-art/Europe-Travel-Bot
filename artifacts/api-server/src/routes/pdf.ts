@@ -283,10 +283,10 @@ router.post("/chat", async (req: Request, res: Response) => {
 
   try {
     const isGmapQ = isGoogleMapQuestion(question);
-    const tavilyQuery = isGmapQ ? `구글맵 사용법 유튜브 ${question}` : question;
 
+    // 구글맵 질문은 웹 검색 생략 → 슬라이드 이미지 + PDF로 바로 답변 (속도 향상)
     const [webResults, queryEmbedding] = await Promise.all([
-      tavilySearch(tavilyQuery),
+      isGmapQ ? Promise.resolve([]) : tavilySearch(question),
       getEmbedding(question),
     ]);
 
@@ -341,10 +341,10 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
 
   try {
     const isGmapQ = isGoogleMapQuestion(question);
-    const tavilyQuery = isGmapQ ? `구글맵 사용법 유튜브 ${question}` : question;
 
+    // 구글맵 질문은 웹 검색 생략 → 속도 향상
     const [webResults, queryEmbedding] = await Promise.all([
-      tavilySearch(tavilyQuery),
+      isGmapQ ? Promise.resolve([]) : tavilySearch(question),
       getEmbedding(question),
     ]);
 
