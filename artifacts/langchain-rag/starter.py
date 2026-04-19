@@ -35,7 +35,20 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-/* ── 기본 폰트 & 배경 ── */
+/* ── 밝은 배경 강제 (다크모드 방지) ── */
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stHeader"],
+[data-testid="stMain"],
+section[data-testid="stSidebar"],
+.main .block-container {
+    background-color: #ffffff !important;
+    color: #1a1a1a !important;
+}
+[data-testid="stChatInput"] textarea { background: #f8f8f8 !important; color: #1a1a1a !important; }
+[data-testid="stChatMessageContent"] { color: #1a1a1a !important; }
+
+/* ── 기본 폰트 크기 ── */
 html, body, [class*="css"] { font-size: 18px !important; }
 
 /* ── 노란 제안 버튼 (suggestion) ── */
