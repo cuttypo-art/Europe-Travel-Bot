@@ -73,6 +73,7 @@ export function ChatInterface() {
   const chatMutation = useChatWithPdf();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,8 +83,9 @@ export function ChatInterface() {
   }, [messages]);
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || chatMutation.isPending) return;
+    if (!text.trim() || isLoading) return;
     setInput("");
+    setIsLoading(true);
     const newMessages: ChatMessage[] = [...messages, { role: "user", content: text.trim() }];
     setMessages(newMessages);
     try {
@@ -103,7 +105,9 @@ export function ChatInterface() {
           images: (response as any).images ?? [],
         },
       ]);
+      setIsLoading(false);
     } catch {
+      setIsLoading(false);
       setMessages([
         ...newMessages,
         { role: "assistant", content: "죄송해요, 오류가 발생했어요. 다시 시도해 주세요." },
@@ -134,7 +138,7 @@ export function ChatInterface() {
             <MessageBubble key={idx} msg={msg} onSuggest={q => { setInput(q); sendMessage(q); }} />
           ))
         )}
-        {chatMutation.isPending && <TypingIndicator />}
+        {isLoading && <TypingIndicator />}
         <div ref={messagesEndRef} />
       </div>
 
@@ -159,11 +163,11 @@ export function ChatInterface() {
             placeholder="유럽 여행, 구글맵 사용법 등 무엇이든 물어보세요..."
             className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 resize-none min-h-[32px] max-h-[120px] py-2 text-base placeholder:text-gray-400"
             rows={1}
-            disabled={chatMutation.isPending}
+            disabled={isLoading}
           />
           <button
             type="submit"
-            disabled={!input.trim() || chatMutation.isPending}
+            disabled={!input.trim() || isLoading}
             className="h-10 rounded-full flex items-center gap-1.5 px-4 shrink-0 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed mb-0.5 text-sm font-semibold text-white"
             style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}
           >
