@@ -166,7 +166,7 @@ async function tavilySearch(query: string): Promise<WebResult[]> {
 
 // ── 구글맵 관련 질문 감지 ────────────────────────────────────────────────────
 function isGoogleMapQuestion(q: string): boolean {
-  return /구글\s*맵|구글\s*지도|google\s*map|길찾기|내비|나침반|스트리트뷰|위성\s*지도|장소\s*검색|즐겨찾기\s*저장|오프라인\s*지도|라이브\s*뷰|live\s*view|위치\s*공유|리뷰|평점|후기/i.test(q);
+  return /구글\s*맵|구글\s*지도|google\s*map|길찾기|내비|나침반|스트리트뷰|위성\s*지도|장소\s*검색|즐겨찾기\s*저장|오프라인\s*지도|라이브\s*뷰|live\s*view|위치\s*공유|리뷰|평점|후기|기차\s*예약|유럽\s*기차|열차\s*예약|train|rail|버스\s*예약|비행기\s*예약|번역기|실시간\s*대화|구글\s*번역/i.test(q);
 }
 
 // ── 구글맵 슬라이드 이미지 URL 반환 ─────────────────────────────────────────
@@ -197,9 +197,21 @@ const GMAP_TOPIC_IMAGES: TopicImages[] = [
     ]
   },
   { keywords: /지도\s*비교|citymapper|maps\.me/i,                      pages: [138] },
+  { keywords: /기차\s*예약|유럽\s*기차|열차\s*예약|train|rail|버스\s*예약|비행기\s*예약/i,
+    urls: [
+      "/api/gmap-slides/train-1.png",
+      "/api/gmap-slides/train-2.png",
+      "/api/gmap-slides/train-3.png",
+      "/api/gmap-slides/train-4.png",
+      "/api/gmap-slides/train-5.png",
+      "/api/gmap-slides/train-6.png",
+      "/api/gmap-slides/train-7.png",
+      "/api/gmap-slides/train-8.png",
+    ]
+  },
 ];
 
-function getRelevantGmapImages(question: string, max = 5): string[] {
+function getRelevantGmapImages(question: string, max = 8): string[] {
   const matchedPages: number[] = [];
   const matchedUrls: string[] = [];
   for (const topic of GMAP_TOPIC_IMAGES) {
