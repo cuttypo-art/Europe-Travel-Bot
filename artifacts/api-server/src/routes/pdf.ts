@@ -174,7 +174,7 @@ function pageUrl(n: number): string {
   return `/api/gmap-slides/page-${String(n).padStart(3, "0")}.png`;
 }
 
-interface TopicImages { keywords: RegExp; pages: number[] }
+interface TopicImages { keywords: RegExp; pages?: number[]; urls?: string[] }
 
 const GMAP_TOPIC_IMAGES: TopicImages[] = [
   { keywords: /설치|다운로드|플레이\s*스토어|install/i,               pages: [3, 4, 5, 6] },
@@ -187,19 +187,31 @@ const GMAP_TOPIC_IMAGES: TopicImages[] = [
   { keywords: /길찾기|경로|내비|navigation|도보|대중교통|자전거/i,      pages: [48, 51, 52, 53, 55, 56] },
   { keywords: /라이브\s*뷰|live\s*view|증강현실|ar/i,                  pages: [83, 84, 85, 86, 87, 88, 89] },
   { keywords: /즐겨찾기|저장|목록|나만의\s*여행|travel\s*map/i,        pages: [93, 94, 95, 96] },
-  { keywords: /위치\s*공유|현재\s*위치\s*보내|동선/i,                  pages: [129, 130, 131, 132, 133, 134] },
+  { keywords: /위치\s*공유|현재\s*위치\s*보내|동선|위치.*공유|공유.*위치/i,
+    urls: [
+      "/api/gmap-slides/mylocation-1.png",
+      "/api/gmap-slides/mylocation-2.png",
+      "/api/gmap-slides/mylocation-3.png",
+      "/api/gmap-slides/mylocation-4.png",
+      "/api/gmap-slides/mylocation-5.png",
+    ]
+  },
   { keywords: /지도\s*비교|citymapper|maps\.me/i,                      pages: [138] },
 ];
 
-function getRelevantGmapImages(question: string, max = 4): string[] {
-  const matched: number[] = [];
+function getRelevantGmapImages(question: string, max = 5): string[] {
+  const matchedPages: number[] = [];
+  const matchedUrls: string[] = [];
   for (const topic of GMAP_TOPIC_IMAGES) {
     if (topic.keywords.test(question)) {
-      matched.push(...topic.pages);
+      if (topic.urls) matchedUrls.push(...topic.urls);
+      if (topic.pages) matchedPages.push(...topic.pages);
     }
   }
-  // 중복 제거 후 최대 max개 반환
-  const unique = [...new Set(matched)].slice(0, max);
+  // 커스텀 URL이 있으면 우선 반환
+  if (matchedUrls.length > 0) return [...new Set(matchedUrls)].slice(0, max);
+  // 페이지 번호 기반 반환
+  const unique = [...new Set(matchedPages)].slice(0, max);
   // 매칭 없으면 기본 인터페이스 이미지 보여주기
   if (unique.length === 0) return [pageUrl(1), pageUrl(7), pageUrl(15)];
   return unique.map(pageUrl);
