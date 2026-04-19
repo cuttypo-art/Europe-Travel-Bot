@@ -64,6 +64,8 @@ const GMAP_FOLLOWUPS = [
   "구글맵 리뷰 보는 법?",
   "라이브뷰 기능이 뭐야?",
   "현재 위치 공유하는 법?",
+  "유럽기차 예약방법은?",
+  "번역기로 실시간 대화하는 법?",
 ];
 
 export function ChatInterface() {
@@ -406,7 +408,7 @@ function MessageBubble({ msg, onSuggest }: { msg: ChatMessage; onSuggest: (q: st
         {isGmap && (
           <div className="mt-4 ml-1">
             <p className="text-[12px] font-semibold text-blue-600 mb-2">
-              🗺️ 구글맵 관련 질문을 더 해보세요
+              📱 유럽여행 앱 활용 질문을 더 해보세요.
             </p>
             <div className="flex flex-wrap gap-2">
               {GMAP_FOLLOWUPS.map(q => (
