@@ -48,7 +48,7 @@ const SUGGESTIONS = [
   "유럽 크리스마스 마켓 필수 먹거리는?",
   "부다페스트 야경명소는?",
 ];
-const GMAP_CHIP = "📖 작가가 알려주는 유럽여행팁";
+const GMAP_CHIP = "📱 유럽 여행 필수 앱 활용법";
 
 const TRAVEL_TIPS = [
   "구글맵으로 길찾기 하는 법?",
