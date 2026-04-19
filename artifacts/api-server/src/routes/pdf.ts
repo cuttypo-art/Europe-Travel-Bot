@@ -166,7 +166,7 @@ async function tavilySearch(query: string): Promise<WebResult[]> {
 
 // ── 구글맵 관련 질문 감지 ────────────────────────────────────────────────────
 function isGoogleMapQuestion(q: string): boolean {
-  return /구글\s*맵|구글\s*지도|google\s*map|길찾기|내비|나침반|스트리트뷰|위성\s*지도|장소\s*검색|즐겨찾기\s*저장|오프라인\s*지도|라이브\s*뷰|live\s*view|위치\s*공유|리뷰|평점|후기|기차\s*예약|유럽\s*기차|열차\s*예약|train|rail|버스\s*예약|비행기\s*예약|번역기|실시간\s*대화|구글\s*번역/i.test(q);
+  return /구글\s*맵|구글\s*지도|google\s*map|길찾기|내비|나침반|스트리트뷰|위성\s*지도|장소\s*검색|즐겨찾기\s*저장|오프라인\s*지도|라이브\s*뷰|live\s*view|위치\s*공유|리뷰|평점|후기|기차\s*예약|유럽\s*기차|열차\s*예약|train|rail|버스\s*예약|비행기\s*예약|번역기|실시간\s*대화|구글\s*번역|준비물|짐\s*싸기|챙길\s*것|packing/i.test(q);
 }
 
 // ── 구글맵 슬라이드 이미지 URL 반환 ─────────────────────────────────────────
@@ -217,6 +217,15 @@ const GMAP_TOPIC_IMAGES: TopicImages[] = [
       "/api/gmap-slides/translate-4.png",
       "/api/gmap-slides/translate-5.png",
       "/api/gmap-slides/translate-6.png",
+    ]
+  },
+  { keywords: /준비물|짐\s*싸기|챙길\s*것|packing|체크리스트.*여행|여행.*체크리스트/i,
+    urls: [
+      "/api/gmap-slides/packing-1.png",
+      "/api/gmap-slides/packing-2.png",
+      "/api/gmap-slides/packing-3.png",
+      "/api/gmap-slides/packing-4.png",
+      "/api/gmap-slides/packing-5.png",
     ]
   },
 ];
