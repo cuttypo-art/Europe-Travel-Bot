@@ -48,13 +48,22 @@ const SUGGESTIONS = [
   "유럽 크리스마스 마켓 필수 먹거리는?",
   "부다페스트 야경명소는?",
 ];
-const GMAP_CHIP = "📍 구글맵 사용법 알려줘";
+const GMAP_CHIP = "📖 작가가 알려주는 유럽여행팁";
+
+const TRAVEL_TIPS = [
+  "구글맵으로 길찾기 하는 법?",
+  "구글맵 리뷰 보는 법?",
+  "라이브뷰 기능이 뭐야?",
+  "현재 위치 공유하는 법?",
+  "유럽기차예약방법은?",
+  "번역기로 실시간 대화하는 법?",
+];
 
 const GMAP_FOLLOWUPS = [
-  "구글맵으로 길찾기 하는 법은?",
-  "구글맵 리뷰 보는 법은?",
+  "구글맵으로 길찾기 하는 법?",
+  "구글맵 리뷰 보는 법?",
   "라이브뷰 기능이 뭐야?",
-  "현재 위치 공유하는 법은?",
+  "현재 위치 공유하는 법?",
 ];
 
 export function ChatInterface() {
@@ -225,6 +234,8 @@ function BookCoverFrame() {
 const BOOK_URL = "https://ebook-product.kyobobook.co.kr/dig/epd/ebook/E000012350958";
 
 function WelcomeScreen({ onSuggest }: { hasPdf: boolean; onSuggest: (q: string) => void }) {
+  const [showTips, setShowTips] = useState(false);
+
   return (
     <div className="flex flex-col items-center justify-start pt-4 pb-2 text-center">
 
@@ -252,9 +263,9 @@ function WelcomeScreen({ onSuggest }: { hasPdf: boolean; onSuggest: (q: string) 
         </p>
       </div>
 
-      {/* 구글맵 강조 버튼 */}
+      {/* 작가 여행팁 강조 버튼 */}
       <button
-        onClick={() => onSuggest(GMAP_CHIP)}
+        onClick={() => setShowTips(prev => !prev)}
         className="w-full max-w-xl mb-3 text-center font-bold px-5 py-4 rounded-2xl transition-all duration-200 ease-out text-base text-white"
         style={{
           background: "linear-gradient(135deg, #2563eb, #4f46e5)",
@@ -264,8 +275,31 @@ function WelcomeScreen({ onSuggest }: { hasPdf: boolean; onSuggest: (q: string) 
         onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 26px rgba(59,130,246,0.45)"; }}
         onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(59,130,246,0.35)"; }}
       >
-        {GMAP_CHIP}
+        {GMAP_CHIP} {showTips ? "▲" : "▼"}
       </button>
+
+      {/* 서브 토픽 버튼 (펼침) */}
+      {showTips && (
+        <div className="w-full max-w-xl mb-4 grid grid-cols-2 gap-2">
+          {TRAVEL_TIPS.map(q => (
+            <button
+              key={q}
+              onClick={() => { setShowTips(false); onSuggest(q); }}
+              className="text-left font-medium px-4 py-3 rounded-xl transition-all duration-150 text-sm"
+              style={{
+                background: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                color: "#1d4ed8",
+                boxShadow: "0 1px 4px rgba(59,130,246,0.10)",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#dbeafe"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.transform = "translateY(0)"; }}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 안내 문구 */}
       <p className="text-sm text-gray-400 mb-3 leading-relaxed">
