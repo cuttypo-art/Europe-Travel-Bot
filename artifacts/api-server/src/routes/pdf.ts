@@ -209,6 +209,16 @@ const GMAP_TOPIC_IMAGES: TopicImages[] = [
       "/api/gmap-slides/train-8.png",
     ]
   },
+  { keywords: /번역기|실시간\s*대화|구글\s*번역|google\s*translate|외국어.*대화|대화.*번역/i,
+    urls: [
+      "/api/gmap-slides/translate-1.png",
+      "/api/gmap-slides/translate-2.png",
+      "/api/gmap-slides/translate-3.png",
+      "/api/gmap-slides/translate-4.png",
+      "/api/gmap-slides/translate-5.png",
+      "/api/gmap-slides/translate-6.png",
+    ]
+  },
 ];
 
 function getRelevantGmapImages(question: string, max = 8): string[] {
