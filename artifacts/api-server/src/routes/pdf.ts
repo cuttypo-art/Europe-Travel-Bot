@@ -169,6 +169,11 @@ function isGoogleMapQuestion(q: string): boolean {
   return /구글\s*맵|구글\s*지도|google\s*map|길찾기|내비|나침반|스트리트뷰|위성\s*지도|장소\s*검색|즐겨찾기\s*저장|오프라인\s*지도|라이브\s*뷰|live\s*view|위치\s*공유|리뷰|평점|후기|기차\s*예약|유럽\s*기차|열차\s*예약|train|rail|버스\s*예약|비행기\s*예약|번역기|실시간\s*대화|구글\s*번역|준비물|짐\s*싸기|챙길\s*것|packing/i.test(q);
 }
 
+// ── 현지 투어 관련 질문 감지 ──────────────────────────────────────────────────
+function isTourQuestion(q: string): boolean {
+  return /투어|tour|주의사항|현지.*예약|예약.*주의|당일치기|야경.*투어|투어.*예약/i.test(q);
+}
+
 // ── 구글맵 슬라이드 이미지 URL 반환 ─────────────────────────────────────────
 function pageUrl(n: number): string {
   return `/api/gmap-slides/page-${String(n).padStart(3, "0")}.png`;
@@ -270,7 +275,7 @@ async function searchAllStores(question: string, queryEmbedding: number[]): Prom
 }
 
 // ── 시스템 프롬프트 생성 ─────────────────────────────────────────────────────
-function buildSystemPrompt(pdfContext: string, webContext: string, isGmapQ: boolean): string {
+function buildSystemPrompt(pdfContext: string, webContext: string, isGmapQ: boolean, isTourQ = false): string {
   let prompt = `당신은 친절하고 유용한 동유럽 여행 및 구글맵 사용법 전문 챗봇입니다.
 질문에 자세하고 실용적으로 답해주세요. 질문과 같은 언어로 답변하세요 (한국어 질문 → 한국어 답변).
 
@@ -331,6 +336,30 @@ function buildSystemPrompt(pdfContext: string, webContext: string, isGmapQ: bool
 단계별로 쉽게 설명하고, 해외 여행자에게 특히 유용한 기능을 강조하세요.`;
   }
 
+  if (isTourQ) {
+    prompt += `\n\n## ⚠️ 이 질문은 현지 투어 예약 관련 질문입니다. 아래 내용을 반드시 모두 포함하여 답변하세요.
+
+**핵심 팁: 현지 투어는 도착 당일이나 다음날 최대한 빨리 예약하고 진행하세요.**
+날씨 등 예상치 못한 상황으로 실패해도 일정 안에 재도전할 수 있습니다.
+
+**작가의 실제 경험 — 부다페스트 야경 투어:**
+부다페스트에서 야경 투어를 했는데 당일 짙은 안개가 껴서 야경을 제대로 보지 못했습니다.
+다음날 직접 어부의 요새(Fisherman's Bastion)에 올라가서 야경을 다시 감상했습니다.
+만약 마지막 날에 투어를 했다면 아예 못 봤을 거예요. 투어는 일정 초반에!
+
+**작가가 직접 경험한 현지 투어 사례 목록:**
+1. 포르투갈 리스본 → 신트라(Sintra) 당일치기: 동화 같은 궁전 마을, 차로 40분
+2. 영국 런던 → 옥스퍼드(Oxford) 당일치기: 해리포터 촬영지, 버스 1시간 30분
+3. 영국 런던 → 런던 야경 투어: 템스강변·타워브리지·빅벤 야경 가이드 투어
+4. 이탈리아 로마 → 남부 투어(폼페이·포지타노): 고대 도시와 아말피 해안을 하루에
+5. 스코틀랜드 에딘버러 → 하이랜드 투어: 네스 호수·글렌코, 운전 불필요 → 시니어 추천
+6. 대만 타이페이 → 지우펀(九份) 투어: 《센과 치히로》 배경, 저녁 야경 최고
+7. 부다페스트 어부의 요새: 야경 재도전 명소, 무료 입장 가능
+
+**예약 플랫폼:** GetYourGuide (https://www.getyourguide.com), 클룩(Klook) — Free cancellation 표시 필수 확인
+**집결 장소:** 구글맵에 미리 저장해두세요.`;
+  }
+
   if (pdfContext) {
     prompt += `\n\n## 참고 자료 (여행기 & 구글맵 가이드)\n${pdfContext}`;
   }
@@ -355,6 +384,7 @@ router.post("/chat", async (req: Request, res: Response) => {
 
   try {
     const isGmapQ = isGoogleMapQuestion(question);
+    const isTourQ = isTourQuestion(question);
 
     // 구글맵 질문은 웹 검색 생략 → 슬라이드 이미지 + PDF로 바로 답변 (속도 향상)
     const [webResults, queryEmbedding] = await Promise.all([
@@ -368,7 +398,7 @@ router.post("/chat", async (req: Request, res: Response) => {
       ? webResults.map((r, i) => `[웹 ${i + 1}] ${r.title}\n${r.content}\n출처: ${r.url}`).join("\n\n")
       : "";
 
-    const systemPrompt = buildSystemPrompt(pdfContext, webContext, isGmapQ);
+    const systemPrompt = buildSystemPrompt(pdfContext, webContext, isGmapQ, isTourQ);
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
       { role: "system", content: systemPrompt },
@@ -413,6 +443,7 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
 
   try {
     const isGmapQ = isGoogleMapQuestion(question);
+    const isTourQ = isTourQuestion(question);
 
     // 구글맵 질문은 웹 검색 생략 → 속도 향상
     const [webResults, queryEmbedding] = await Promise.all([
@@ -429,7 +460,7 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
     // 소스 먼저 전송
     send("sources", { sources, webResults });
 
-    const systemPrompt = buildSystemPrompt(pdfContext, webContext, isGmapQ);
+    const systemPrompt = buildSystemPrompt(pdfContext, webContext, isGmapQ, isTourQ);
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
       { role: "system", content: systemPrompt },
