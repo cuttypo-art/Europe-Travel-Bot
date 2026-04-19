@@ -1,3 +1,0 @@
-_type: "prompt"
-template: "What is the color of {fruit}?"
-input_variables: ["fruit"]
