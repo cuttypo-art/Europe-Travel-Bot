@@ -615,6 +615,16 @@ def main():
         "web_results": web_results,
         "is_gmap": gmap,
     })
+
+    # 답변 후 채팅 영역으로 스크롤
+    import streamlit.components.v1 as components
+    components.html("""
+<script>
+    var container = window.parent.document.querySelector('[data-testid="stAppViewContainer"]');
+    if (container) container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+</script>
+""", height=0)
+
     st.rerun()
 
 
