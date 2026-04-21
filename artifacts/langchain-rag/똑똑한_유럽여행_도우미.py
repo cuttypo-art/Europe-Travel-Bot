@@ -33,7 +33,7 @@ st.set_page_config(
     page_title="똑똑한 유럽여행 도우미",
     page_icon="✈️",
     layout="centered",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 st.markdown("""
@@ -48,11 +48,19 @@ html, body, [class*="css"] {
 .stApp {
     background: #f8fafc !important;
 }
-header[data-testid="stHeader"] { display: none !important; }
+/* 헤더는 투명하게 유지 (사이드바 토글 버튼 살림) */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    border-bottom: none !important;
+}
+/* 헤더 안 불필요한 요소만 숨김 */
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"] { display: none !important; }
 
 /* ── 메인 컨테이너 여백 ── */
 .main .block-container {
-    padding-top: 2rem !important;
+    padding-top: 1rem !important;
     padding-bottom: 6rem !important;
     max-width: 780px !important;
 }
@@ -62,9 +70,24 @@ section[data-testid="stSidebar"] {
     background: white !important;
     border-right: 1px solid #e2e8f0 !important;
 }
+/* 사이드바 접기 버튼 숨김 */
+[data-testid="stSidebarCollapseButton"] { display: none !important; }
+
 
 /* ── 구분선 ── */
 hr { border-color: #e2e8f0 !important; margin: 20px 0 !important; }
+
+/* ── 추천 질문 버튼: 640px 이하에서 1열로 전환 → 700px 이하로 확대 ── */
+@media (max-width: 800px) {
+    [data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+    }
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        width: 100% !important;
+        flex: none !important;
+        min-width: 100% !important;
+    }
+}
 
 /* ── 추천 질문 버튼 ── */
 .stButton > button {
@@ -92,18 +115,6 @@ hr { border-color: #e2e8f0 !important; margin: 20px 0 !important; }
 }
 
 /* ── 채팅 입력창 ── */
-div[data-testid="stChatInput"] {
-    background: white !important;
-    border-radius: 16px !important;
-    border: 1.5px solid #e2e8f0 !important;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07) !important;
-    padding: 2px 6px !important;
-    transition: border-color 0.2s, box-shadow 0.2s !important;
-}
-div[data-testid="stChatInput"]:focus-within {
-    border-color: #60a5fa !important;
-    box-shadow: 0 2px 16px rgba(59,130,246,0.15) !important;
-}
 .stChatInput textarea {
     border: none !important;
     font-size: 15px !important;
@@ -408,6 +419,47 @@ def main():
     if "pending" not in st.session_state:
         st.session_state.pending = None
 
+    # 사이드바 토글 버튼 — iframe에서 부모 DOM에 직접 버튼 삽입
+    import streamlit.components.v1 as components
+    components.html("""
+<script>
+(function() {
+    var pd = window.parent.document;
+    if (pd.getElementById('sidebar-toggle-btn')) return;
+
+    var style = pd.createElement('style');
+    style.textContent = [
+        '#sidebar-toggle-btn {',
+        '  position:fixed; top:12px; left:12px; z-index:2147483647;',
+        '  background:white; border:1.5px solid #e2e8f0; border-radius:8px;',
+        '  padding:6px 12px; font-size:18px; cursor:pointer;',
+        '  box-shadow:0 2px 8px rgba(0,0,0,0.12); line-height:1;',
+        '  font-family:sans-serif;',
+        '}',
+        '#sidebar-toggle-btn:hover { background:#f0f7ff; border-color:#93c5fd; }',
+    ].join('');
+    pd.head.appendChild(style);
+
+    var btn = pd.createElement('button');
+    btn.id = 'sidebar-toggle-btn';
+    btn.textContent = '☰';
+    btn.addEventListener('click', function() {
+        var selectors = [
+            '[data-testid="collapsedControl"] button',
+            '[data-testid="stSidebarCollapseButton"] button',
+            'section[data-testid="stSidebar"] button',
+            'header button',
+        ];
+        for (var i = 0; i < selectors.length; i++) {
+            var t = pd.querySelector(selectors[i]);
+            if (t) { t.click(); return; }
+        }
+    });
+    pd.body.appendChild(btn);
+})();
+</script>
+""", height=0)
+
     # 칩 클릭 처리 (query_params)
     if "tip" in st.query_params:
         clicked = st.query_params["tip"]
@@ -427,10 +479,11 @@ def main():
             st.session_state.messages = []
             st.rerun()
         st.divider()
-        if os.path.exists(COVER_PATH):
-            st.image(COVER_PATH, width=160)
-        st.markdown(f"[📖 교보문고에서 책 보기]({BOOK_URL})")
         st.caption("동유럽 여행기 + 구글맵 가이드 + 웹 검색을 결합한 AI 여행 챗봇")
+        st.divider()
+        if os.path.exists(COVER_PATH):
+            st.image(COVER_PATH, width="stretch")
+        st.markdown(f"[📖 교보문고에서 책 보기]({BOOK_URL})")
 
     # ── 앱 타이틀 (항상 표시) ─────────────────────────────────────────────────
     st.markdown(
@@ -486,7 +539,7 @@ def main():
                     for i, p in enumerate(msg["images"]):
                         if os.path.exists(p):
                             with cols[i % 2]:
-                                st.image(p, use_container_width=True)
+                                st.image(p, width="stretch")
                 if msg.get("web_results"):
                     with st.expander("🌐 웹 검색 결과 보기"):
                         for r in msg["web_results"]:
@@ -548,7 +601,7 @@ def main():
             for i, p in enumerate(images):
                 if os.path.exists(p):
                     with cols[i % 2]:
-                        st.image(p, use_container_width=True)
+                        st.image(p, width="stretch")
 
         if web_results:
             with st.expander("🌐 웹 검색 결과 보기"):

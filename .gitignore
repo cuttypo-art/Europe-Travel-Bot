@@ -49,3 +49,28 @@ Thumbs.db
 .local/
 
 .env
+
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# FAISS / Vector Store
+*.faiss
+*.pkl
+
+# PDF uploads (runtime data)
+uploaded_pdfs/
