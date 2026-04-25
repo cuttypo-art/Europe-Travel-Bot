@@ -480,8 +480,7 @@ def main():
             st.session_state.messages = []
             st.rerun()
         st.divider()
-        st.caption("동유럽 여행기 + 구글맵 가이드 + 웹 검색을 결합한 AI 여행 챗봇")
-        st.divider()
+        st.caption("작가의 책과 웹 검색을 결합한 AI 여행 챗봇")
         if os.path.exists(COVER_PATH):
             with open(COVER_PATH, "rb") as _f:
                 _img = base64.b64encode(_f.read()).decode()
@@ -492,7 +491,7 @@ def main():
                 f'</a>',
                 unsafe_allow_html=True,
             )
-        st.markdown(f"[📖 교보문고에서 책 보기]({BOOK_URL})")
+        st.markdown(f'<p style="text-align:center"><a href="{BOOK_URL}" target="_blank">📖 교보문고에서 책 보기</a></p>', unsafe_allow_html=True)
 
     # ── 앱 타이틀 (항상 표시) ─────────────────────────────────────────────────
     st.markdown(
