@@ -1,3 +1,4 @@
+import base64
 import os
 import re
 import requests
@@ -475,14 +476,22 @@ def main():
     # 사이드바
     with st.sidebar:
         st.markdown("### ⚙️ 설정")
-        if st.button("🗑️ 대화 초기화", use_container_width=True):
+        if st.button("새 대화 시작", use_container_width=True):
             st.session_state.messages = []
             st.rerun()
         st.divider()
         st.caption("동유럽 여행기 + 구글맵 가이드 + 웹 검색을 결합한 AI 여행 챗봇")
         st.divider()
         if os.path.exists(COVER_PATH):
-            st.image(COVER_PATH, width="stretch")
+            with open(COVER_PATH, "rb") as _f:
+                _img = base64.b64encode(_f.read()).decode()
+            st.markdown(
+                f'<a href="{BOOK_URL}" target="_blank" style="display:block;text-align:center;">'
+                f'<img src="data:image/png;base64,{_img}" '
+                f'style="width:75%;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">'
+                f'</a>',
+                unsafe_allow_html=True,
+            )
         st.markdown(f"[📖 교보문고에서 책 보기]({BOOK_URL})")
 
     # ── 앱 타이틀 (항상 표시) ─────────────────────────────────────────────────
